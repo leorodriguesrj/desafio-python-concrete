@@ -22,7 +22,7 @@ class ServicoUsuario(object):
         usuario = self.__dao_usuario.buscar_por_email_senha(email, senha)
         if usuario is None:
             raise ErroCredenciaisIvalidas()
-        self.__dao_usuario.atualizar(usuario.id, ultimo_login=datetime.now())
+        self.__dao_usuario.atualizar_ultimo_login(usuario.id, datetime.now())
         telefones = self.__dao_usuario.buscar_telefones(usuario.id)
         return usuario, telefones
 
@@ -38,15 +38,8 @@ class ServicoUsuario(object):
             entidades_telefone.append(t)
         return usuario, entidades_telefone
 
-    def atualizar(self, email, nome, senha, telefones, id_usuario):
-        if self.__dao_usuario.email_pertence_a_outro_usuario(email, id_usuario):
-            raise ErroEmailRepetido()
-        usuario, telefones = self.__dao_usuario.atualizar(
-            email, nome, senha, telefones, id_usuario)
-        return usuario, telefones
-
     def obter(self, id_usuario):
         return self.__dao_usuario.obter(id_usuario)
 
-    def remover(self, id_usuario):
-        return {}, []
+    def atualizar_token(self, id_usuario, token):
+        self.__dao_usuario.atualizar_token(id_usuario, token)

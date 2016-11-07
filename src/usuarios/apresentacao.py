@@ -62,26 +62,6 @@ class UsuarioController(object):
         except ErroEmailRepetido:
             raise ErroDeController(409, to_utf8(MSG_409))
 
-    def atualizar(self, json, id_usuario):
-        if self.rejeitar_representacao_usuario(json):
-            raise ErroDeController(400, to_utf8(MSG_400))
-
-        email = json.get('email')
-        nome = json.get('nome')
-        senha = json.get('senha')
-        telefones = []
-        for telefone in json.get('telefones'):
-            telefones.append({
-                "numero": telefone.get('numero'), "ddd": telefone.get('ddd')
-            })
-
-        try:
-            usuario, telefones = self.__servico_usuario.atualizar(
-                    email, nome, senha, telefones, id_usuario)
-            return self.__nova_representacao_usuario(usuario, telefones)
-        except ErroEmailRepetido:
-            raise ErroDeController(409, to_utf8(MSG_409))
-
     def remover(self, id_usuario):
         if id_usuario is None:
             mensagem = MSG_400.decode("iso8859-1").encode("utf-8")

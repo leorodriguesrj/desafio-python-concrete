@@ -64,13 +64,16 @@ class DaoUsuario(object):
         where = exists().where(Usuario.email == email)
         return self.__sessao.query(where).scalar()
 
-    def atualizar(self, id_usuario, **kwargs):
-        parametros = {}
-        if 'ultimo_login' in kwargs:
-            parametros[Usuario.ultimo_login] = kwargs['ultimo_login']
+    def atualizar_ultimo_login(self, id_usuario, data_e_hora):
         self.__sessao.query(Usuario) \
             .filter(Usuario.id == id_usuario) \
-            .update(parametros)
+            .update({Usuario.ultimo_login: data_e_hora})
+        self.__sessao.commit()
+
+    def atualizar_token(self, id_usuario, token):
+        self.__sessao.query(Usuario) \
+            .filter(Usuario.id == id_usuario) \
+            .update({Usuario.token: token})
         self.__sessao.commit()
 
     def adicionar_usuario(self, email, nome, senha):
