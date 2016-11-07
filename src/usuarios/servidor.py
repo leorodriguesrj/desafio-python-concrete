@@ -1,15 +1,16 @@
 # -*- coding: iso8859-1 -*-
 from uuid import uuid4
 
+from datetime import timedelta
 from flask import Flask, jsonify, abort, make_response, request
 from apresentacao import UsuarioController, ErroDeController
 from base import sessao, DaoUsuario
 from servico import ServicoUsuario
-from flask_jwt import JWT, jwt_required, current_identity
+from flask_jwt import JWT, jwt_required
 
 import ssl
 
-from constantes import to_utf8, MSG_405, MSG_500, MSG_401
+from mensagens import *
 
 app = Flask(__name__)
 
@@ -23,10 +24,14 @@ app.config['SECRET_KEY'] = str(uuid4())
 app.config['JWT_AUTH_URL_RULE'] = '/api/usuario/login'
 app.config['JWT_AUTH_USERNAME_KEY'] = 'email'
 app.config['JWT_AUTH_PASSWORD_KEY'] = 'senha'
+app.config['JWT_EXPIRATION_DELTA'] = timedelta(0, 0, 0, 0, 1, 0, 0)
 
 
 def autenticar(email, senha):
-    usuario, telefones = servico_usuario.logar(email, senha)
+    try:
+        usuario, telefones = servico_usuario.logar(email, senha)
+    except:
+        return None
     return usuario
 
 
@@ -39,14 +44,21 @@ jwt = JWT(app, autenticar, identidade)
 
 @jwt.jwt_error_handler
 def erro_autenticacao(e):
-    return jsonify({"mensagem": to_utf8(MSG_401)}), 401
+    if e.message == 'Invalid Token':
+        return jsonify({"mensagem": to_utf8(MSG_401_B)}), 403
+    return jsonify({"mensagem": to_utf8(MSG_401_A)}), 401
 
 
 @jwt.auth_response_handler
 def fazer_handler(token, usuario):
+    usuario.token = token
+    servico_usuario.atualizar_token(usuario.id, token)
+    telefones = servico_usuario.buscar_telefones(usuario.id)
+    representacao = usuario_controller \
+        .nova_representacao_usuario(usuario, telefones)
+
     def handler():
-        servico_usuario.atualizar_token(usuario.id, token)
-        return jsonify({"token": token}), 200
+        return jsonify(representacao), 200
     return handler()
 
 
@@ -59,7 +71,7 @@ def index():
 def adicionar_usuario():
     try:
         representacao = usuario_controller.adicionar(request.json)
-        return jsonify(representacao)
+        return make_response(jsonify(representacao), 201)
     except ErroDeController as e:
         abort(e.codigo, {'mensagem': e.message})
 

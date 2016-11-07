@@ -1,6 +1,6 @@
 # -*- coding: iso8859-1 -*-
 
-from constantes import *
+from mensagens import *
 from servico import ErroEmailRepetido, ErroCredenciaisIvalidas
 
 
@@ -18,29 +18,13 @@ class UsuarioController(object):
     def __init__(self, servico_usuario):
         self.__servico_usuario = servico_usuario
 
-    def login(self, json):
-        if self.rejeitar_representacao_login(json):
-            raise ErroDeController(400, to_utf8(MSG_400))
-
-        email = json.get("email")
-        senha = json.get("senha")
-
-        try:
-            usuario, telefones = self.__servico_usuario.logar(email, senha)
-            return self.__nova_representacao_usuario(usuario, telefones)
-        except ErroCredenciaisIvalidas:
-            raise ErroDeController(401, to_utf8(MSG_401))
-
     def obter(self, id_usuario):
         if id_usuario is None:
             raise ErroDeController(400, to_utf8(MSG_400))
-        try:
-            usuario, telefones = self.__servico_usuario.obter(id_usuario)
-            if usuario is None:
-                raise ErroDeController(404, to_utf8(MSG_404))
-            return self.__nova_representacao_usuario(usuario, telefones)
-        except ErroEmailRepetido:
-            raise ErroDeController(409, to_utf8(MSG_409))
+        usuario, telefones = self.__servico_usuario.obter(id_usuario)
+        if usuario is None:
+            raise ErroDeController(404, to_utf8(MSG_404))
+        return self.nova_representacao_usuario(usuario, telefones)
 
     def adicionar(self, json):
         if self.rejeitar_representacao_usuario(json):
@@ -58,17 +42,9 @@ class UsuarioController(object):
         try:
             usuario, telefones = self.__servico_usuario.adicionar(
                 email, nome, senha, telefones)
-            return self.__nova_representacao_usuario(usuario, telefones)
+            return self.nova_representacao_usuario(usuario, telefones)
         except ErroEmailRepetido:
             raise ErroDeController(409, to_utf8(MSG_409))
-
-    def remover(self, id_usuario):
-        if id_usuario is None:
-            mensagem = MSG_400.decode("iso8859-1").encode("utf-8")
-            raise ErroDeController(400, mensagem)
-
-        usuario, telefones = self.__servico_usuario.excluir(id_usuario)
-        return self.__nova_representacao_usuario(usuario, telefones)
 
     def rejeitar_representacao_login(self, json):
         if not json:
@@ -93,14 +69,7 @@ class UsuarioController(object):
         return False
 
     @staticmethod
-    def __campos_sao_unicode(mapa, lisa_campos):
-        for campo in lisa_campos:
-            if campo not in mapa or type(mapa[campo]) != unicode:
-                return False
-        return True
-
-    @staticmethod
-    def __nova_representacao_usuario(usuario, telefones):
+    def nova_representacao_usuario(usuario, telefones):
         representacao = {
             "id": usuario.id,
             "nome": usuario.nome,
@@ -113,4 +82,13 @@ class UsuarioController(object):
         }
         if usuario.ultimo_login is not None:
             representacao['ultimo_login'] = usuario.ultimo_login
+        if usuario.token is not None:
+            representacao['token'] = usuario.token
         return representacao
+
+    @staticmethod
+    def __campos_sao_unicode(mapa, lisa_campos):
+        for campo in lisa_campos:
+            if campo not in mapa or type(mapa[campo]) != unicode:
+                return False
+        return True

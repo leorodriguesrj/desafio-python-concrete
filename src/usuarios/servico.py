@@ -43,3 +43,6 @@ class ServicoUsuario(object):
 
     def atualizar_token(self, id_usuario, token):
         self.__dao_usuario.atualizar_token(id_usuario, token)
+
+    def buscar_telefones(self, id_usuario):
+        return self.__dao_usuario.buscar_telefones(id_usuario)
